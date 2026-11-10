@@ -7,6 +7,7 @@ and how it contributes to the dataset-arrival and SLA-monitoring problem.
 
 ```text
 DataBeacon/
+├── .gitignore
 ├── README.md
 ├── pyproject.toml
 ├── src/databeacon/
@@ -34,7 +35,9 @@ DataBeacon/
 │       ├── reports.py
 │       └── validation.py
 ├── scripts/
-│   └── benchmark.py
+│   ├── benchmark.py
+│   ├── build_test_evidence.py
+│   └── run_tests.py
 ├── tests/
 │   ├── test_api.py
 │   └── test_pipeline.py
@@ -42,19 +45,27 @@ DataBeacon/
 │   ├── sample/
 │   │   ├── events.csv
 │   │   ├── invalid_events.csv
-│   │   └── invalid_events.expected.json
+│   │   ├── invalid_events.expected.json
+│   │   ├── attention_events.csv
+│   │   ├── attention_events.expected.json
+│   │   ├── critical_missing_events.csv
+│   │   ├── critical_missing_events.expected.json
+│   │   ├── dashboard_demo_events.csv
+│   │   └── dashboard_demo_events.expected.json
+│   ├── evidence/
+│   │   └── happy_path_events.csv
 │   ├── output/
 │   │   └── validation_report.json
 │   ├── manifest.json
-│   └── databeacon.db
+│   └── test_evidence.json
 ├── docs/
 │   ├── architecture.md
 │   ├── data-dictionary.md
 │   ├── evaluation_metrics.md
 │   ├── project-map.md
-│   └── requirements-matrix.md
-└── ai_transparency/
-    └── PROMPT_HISTORY.md
+│   ├── requirements-matrix.md
+│   ├── dashboard-overview.png
+│   └── dashboard-run-history.png
 ```
 
 The local `.venv/` directory, Python bytecode, and pytest cache are generated
@@ -135,7 +146,7 @@ business decisions easy to test and explain.
 | File | What it does | Problem alignment |
 |---|---|---|
 | `__init__.py` | Marks the pipeline package | Groups ingestion and reporting workflow code |
-| `generator.py` | Creates fixed-seed normal synthetic data at configurable volume | Supplies reproducible sample and scalable 100,000+ row inputs |
+| `generator.py` | Creates seeded or randomized health profiles and appends new event windows | Supplies reproducible sample and scalable synthetic inputs |
 | `validation.py` | Reads exact CSV headers, parses values, validates references, nulls, duplicates, and event ordering | Prevents malformed or invalid source data from contaminating the target |
 | `ingestion.py` | Orchestrates fingerprinting, run lifecycle, validation, publishing, metrics, alerts, retries, and progress output | Provides the complete ingestion-to-target vertical slice |
 | `reports.py` | Writes JSON validation reports and computes reconciliation results | Demonstrates measurable output correctness and explains accepted/rejected differences |
@@ -147,6 +158,13 @@ business decisions easy to test and explain.
 Generates a configurable input, runs it in a temporary SQLite database, and
 prints elapsed seconds and rows per second. It addresses scalability and
 performance reasoning without requiring cloud infrastructure.
+
+### `scripts/build_test_evidence.py`
+
+Rebuilds isolated happy-path, invalid-row, and attention-scenario pipeline
+evidence in temporary/resettable SQLite databases and writes
+`data/test_evidence.json`. This makes expected-versus-observed results
+repeatable without relying on the operator's main database.
 
 ### `scripts/run_tests.py`
 
@@ -178,7 +196,10 @@ Covers:
 * run triggering;
 * dashboard/report/reject/alert endpoints;
 * empty-database dataset visibility;
-* dashboard auto-refresh JavaScript.
+* dashboard auto-refresh JavaScript;
+* database-derived KPI summaries;
+* dataset health for each persisted run;
+* histories containing more than twenty runs.
 
 Together, the tests provide evidence for both data-engineering correctness and
 operator-facing behavior.
@@ -199,7 +220,7 @@ operator-facing behavior.
 | `data/output/validation_report.json` | Sample status, alert, reject, and run evidence | Reviewable output artifact |
 | `data/test_evidence.json` | Consolidated test inputs, expected results, observed outputs, reconciliation, and coverage | Single evidence file for project review |
 | `data/manifest.json` | Generator, seed, file list, schema, and synthetic-data rights | Reproducibility and data provenance |
-| `data/databeacon.db` | Local SQLite target after a sample run | Inspectable local target state |
+| `data/evidence/happy_path_events.csv` | Isolated happy-path input for repeatable test-evidence generation | Avoids dependence on mutable append-only sample input |
 
 ## 10. Documentation and governance
 
@@ -210,7 +231,8 @@ operator-facing behavior.
 | `docs/evaluation_metrics.md` | Defines measurable metrics and acceptance evidence |
 | `docs/requirements-matrix.md` | Maps every business requirement and negative scenario to implementation evidence |
 | `docs/project-map.md` | This file: explains folders/files and their business alignment |
-| `ai_transparency/PROMPT_HISTORY.md` | Discloses AI assistance, human decisions, deterministic runtime behavior, and verification |
+| `docs/dashboard-overview.png` | Dashboard overview screenshot linked by the README | Helps reviewers understand the main dashboard sections |
+| `docs/dashboard-run-history.png` | Expanded run-history screenshot linked by the README | Demonstrates per-run dataset health |
 
 ## 11. End-to-end alignment
 
