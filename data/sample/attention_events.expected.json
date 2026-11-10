@@ -1,0 +1,20 @@
+{
+  "input_count": 2,
+  "accepted_count": 2,
+  "rejected_count": 0,
+  "expected_statuses": {
+    "sales_daily": "late",
+    "inventory_daily": "incomplete",
+    "customers_daily": "missing"
+  },
+  "expected_alert_types": [
+    "sla_breach",
+    "incomplete_load",
+    "missing_load"
+  ],
+  "operator_actions": {
+    "sales_daily": "Review the pipeline; completion exceeded the 120-minute SLA.",
+    "inventory_daily": "Check whether the source has finished publishing.",
+    "customers_daily": "Investigate the source producer and trigger a backfill."
+  }
+}
