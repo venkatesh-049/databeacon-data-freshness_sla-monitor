@@ -58,7 +58,7 @@ screenshots only; they do not imply any dashboard style changes.
 
 ### Dashboard overview
 
-![DataBeacon dashboard overview](docs/dashboard-overview.png)
+![DataBeacon dashboard overview](docs/dashboard-overview-current.png)
 
 * **Datasets monitored** — number of active dataset definitions in SQLite.
   This is the configured catalog count, not the number of input rows in one run.
@@ -89,7 +89,7 @@ screenshots only; they do not imply any dashboard style changes.
 
 ### Run history and dataset health
 
-![Expandable run history with dataset health](docs/dashboard-run-history.png)
+![Expandable run history with dataset health](docs/dashboard-run-history-current.png)
 
 The run history includes every persisted run, not only the most recent 20.
 Each run header shows its start time, status, input rows, and accepted rows.
