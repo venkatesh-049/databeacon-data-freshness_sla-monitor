@@ -1,0 +1,18 @@
+{
+  "dataset": "DataBeacon synthetic arrival events",
+  "generator": "databeacon.pipeline.generator.generate_csv",
+  "seed": 42,
+  "sample_files": [
+    "data/sample/events.csv",
+    "data/sample/invalid_events.csv",
+    "data/sample/invalid_events.expected.json",
+    "data/sample/attention_events.csv",
+    "data/sample/attention_events.expected.json",
+    "data/sample/critical_missing_events.csv",
+    "data/sample/critical_missing_events.expected.json",
+    "data/sample/dashboard_demo_events.csv",
+    "data/sample/dashboard_demo_events.expected.json"
+  ],
+  "schema": "dataset_id,expected_at,arrived_at,completed_at,row_count",
+  "data_rights": "Synthetic data generated for this project; no third-party data used."
+}
