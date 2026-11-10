@@ -67,6 +67,26 @@ def test_empty_batch_is_successful_and_null_or_out_of_order_rows_are_rejected(tm
     assert result["rejected_count"] == 2
 
 
+def test_timestamps_are_normalized_to_utc_before_deterministic_keying(tmp_path: Path):
+    source = tmp_path / "timezone.csv"
+    source.write_text(
+        "dataset_id,expected_at,arrived_at,completed_at,row_count\n"
+        "sales_daily,2026-04-15T06:00:00+00:00,2026-04-15T06:05:00+00:00,2026-04-15T07:00:00+00:00,1\n"
+        "sales_daily,2026-04-15T11:30:00+05:30,2026-04-15T11:35:00+05:30,2026-04-15T12:30:00+05:30,1\n"
+        "sales_daily,2026-04-16T06:00:00,2026-04-16T06:05:00,2026-04-16T07:00:00,1\n",
+        encoding="utf-8",
+    )
+    database = tmp_path / "timezone.sqlite"
+    result = run_pipeline(database, source)
+    assert result["accepted_count"] == 1
+    assert result["rejected_count"] == 2
+    with connect(database) as connection:
+        row = connection.execute(
+            "SELECT expected_at FROM arrival_events"
+        ).fetchone()
+        assert row["expected_at"] == "2026-04-15T06:00:00+00:00"
+
+
 def test_failed_schema_run_can_be_retried_with_corrected_input(tmp_path: Path):
     source = tmp_path / "retry.csv"
     source.write_text("dataset_id,unexpected\nsales_daily,x\n", encoding="utf-8")

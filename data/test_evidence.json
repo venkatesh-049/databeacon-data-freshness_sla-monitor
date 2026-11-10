@@ -1,12 +1,12 @@
 {
   "generated_by": "scripts/build_test_evidence.py",
   "purpose": "Reproducible test data, pipeline outputs, expected results, and reconciliation evidence",
-  "test_command": "python -m pytest",
+  "test_command": "python scripts/run_tests.py",
   "cases": [
     {
       "name": "happy_path",
       "input_file": "data\\evidence\\happy_path_events.csv",
-      "database": "data/evidence/happy_path.db",
+      "database": "temporary database (removed after evidence generation)",
       "expected": {
         "status": "succeeded",
         "input_count": 12,
@@ -14,21 +14,23 @@
         "rejected_count": 0
       },
       "observed_run": {
-        "run_id": "b378a591-33e5-4111-8f61-075ae1feb340",
+        "run_id": "a4ce6931-b35e-4b54-aaf1-68e23663cc29",
         "status": "succeeded",
         "input_count": 12,
         "accepted_count": 12,
         "rejected_count": 0,
-        "duplicate_count": 0
+        "duplicate_count": 0,
+        "updated_count": 0
       },
       "reconciliation": {
         "runs": [
           {
-            "run_id": "b378a591-33e5-4111-8f61-075ae1feb340",
+            "run_id": "a4ce6931-b35e-4b54-aaf1-68e23663cc29",
             "input_count": 12,
             "accepted_count": 12,
             "rejected_count": 0,
             "duplicate_count": 0,
+            "updated_count": 0,
             "status": "succeeded"
           }
         ],
@@ -36,6 +38,7 @@
         "accepted_count": 12,
         "rejected_count": 0,
         "duplicate_count": 0,
+        "updated_count": 0,
         "published_event_count": 12,
         "unique_event_key_count": 12,
         "counts_reconcile": true,
@@ -46,7 +49,7 @@
     {
       "name": "invalid_and_quarantine",
       "input_file": "data\\sample\\invalid_events.csv",
-      "database": "data/evidence/invalid_events.db",
+      "database": "temporary database (removed after evidence generation)",
       "expected": {
         "status": "partial",
         "input_count": 5,
@@ -54,21 +57,23 @@
         "rejected_count": 4
       },
       "observed_run": {
-        "run_id": "1c2e8c59-fbe6-4864-afb9-da98ada7a24e",
+        "run_id": "2e0c3147-687d-4c2b-8983-57ab4059d023",
         "status": "partial",
         "input_count": 5,
         "accepted_count": 1,
         "rejected_count": 4,
-        "duplicate_count": 0
+        "duplicate_count": 0,
+        "updated_count": 0
       },
       "reconciliation": {
         "runs": [
           {
-            "run_id": "1c2e8c59-fbe6-4864-afb9-da98ada7a24e",
+            "run_id": "2e0c3147-687d-4c2b-8983-57ab4059d023",
             "input_count": 5,
             "accepted_count": 1,
             "rejected_count": 4,
             "duplicate_count": 0,
+            "updated_count": 0,
             "status": "partial"
           }
         ],
@@ -76,6 +81,7 @@
         "accepted_count": 1,
         "rejected_count": 4,
         "duplicate_count": 0,
+        "updated_count": 0,
         "published_event_count": 1,
         "unique_event_key_count": 1,
         "counts_reconcile": true,
@@ -86,7 +92,7 @@
     {
       "name": "attention_states",
       "input_file": "data\\sample\\attention_events.csv",
-      "database": "data/evidence/attention_events.db",
+      "database": "temporary database (removed after evidence generation)",
       "expected": {
         "status": "succeeded",
         "input_count": 2,
@@ -94,21 +100,23 @@
         "rejected_count": 0
       },
       "observed_run": {
-        "run_id": "2c7fedab-fe66-4291-816f-11bf3fa2f7ec",
+        "run_id": "ab29325f-88d9-4289-ba73-ee6c60742667",
         "status": "succeeded",
         "input_count": 2,
         "accepted_count": 2,
         "rejected_count": 0,
-        "duplicate_count": 0
+        "duplicate_count": 0,
+        "updated_count": 0
       },
       "reconciliation": {
         "runs": [
           {
-            "run_id": "2c7fedab-fe66-4291-816f-11bf3fa2f7ec",
+            "run_id": "ab29325f-88d9-4289-ba73-ee6c60742667",
             "input_count": 2,
             "accepted_count": 2,
             "rejected_count": 0,
             "duplicate_count": 0,
+            "updated_count": 0,
             "status": "succeeded"
           }
         ],
@@ -116,6 +124,7 @@
         "accepted_count": 2,
         "rejected_count": 0,
         "duplicate_count": 0,
+        "updated_count": 0,
         "published_event_count": 2,
         "unique_event_key_count": 2,
         "counts_reconcile": true,
@@ -124,6 +133,6 @@
       "passed": true
     }
   ],
-  "automated_test_count": 17,
+  "automated_test_count": 26,
   "all_cases_passed": true
 }
