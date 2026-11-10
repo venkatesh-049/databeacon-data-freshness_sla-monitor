@@ -1,0 +1,16 @@
+{
+  "input_count": 2,
+  "accepted_count": 2,
+  "rejected_count": 0,
+  "expected_statuses": {
+    "sales_daily": "fresh",
+    "inventory_daily": "fresh",
+    "customers_daily": "missing"
+  },
+  "critical_alert": {
+    "alert_type": "missing_load",
+    "severity": "critical",
+    "dataset_id": "customers_daily",
+    "action": "Investigate the source producer and trigger a backfill."
+  }
+}
