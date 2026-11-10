@@ -16,6 +16,7 @@ __pycache__/
 *.sqlite-shm
 *.sqlite-wal
 
+data/incoming/
 .coverage
 htmlcov/
 coverage.xml

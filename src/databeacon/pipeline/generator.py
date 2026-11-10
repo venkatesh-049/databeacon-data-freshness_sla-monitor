@@ -7,7 +7,8 @@ FIELDS = ["dataset_id", "expected_at", "arrived_at", "completed_at", "row_count"
 
 
 def generate_csv(path: Path, rows: int = 12, seed: int | None = 42,
-                 append: bool = False, randomize_status: bool = False) -> Path:
+                 append: bool = False, randomize_status: bool = False,
+                 include_missing: bool = True) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     rng = random.Random(seed)
     dataset_ids = [
@@ -41,11 +42,14 @@ def generate_csv(path: Path, rows: int = 12, seed: int | None = 42,
                 rng.choice([10, 20, 30]) if profile == "healthy"
                 else rng.choice([300, 600, 900])
             ))
+            if include_missing and index % 4 == 3:
+                arrived = None
+                completed = None
             writer.writerow({
                 "dataset_id": dataset_id,
                 "expected_at": expected.isoformat(),
-                "arrived_at": arrived.isoformat(),
-                "completed_at": completed.isoformat(),
+                "arrived_at": arrived.isoformat() if arrived else "",
+                "completed_at": completed.isoformat() if completed else "",
                 "row_count": rng.randint(10, 1000),
             })
     return path

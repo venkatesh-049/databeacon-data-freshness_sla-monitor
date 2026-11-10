@@ -1,6 +1,6 @@
 import csv
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -21,13 +21,21 @@ def read_records(path: Path) -> list[tuple[int, dict[str, Any]]]:
 
 def validate_record(row: dict[str, Any], datasets: dict[str, Any],
                     seen: set[str]) -> tuple[ArrivalInput | None, tuple[str, str] | None]:
+    def parse_timestamp(value: str | None) -> datetime | None:
+        if not value:
+            return None
+        parsed = datetime.fromisoformat(value)
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ValueError("timestamps must include a timezone offset")
+        return parsed.astimezone(timezone.utc)
+
     try:
         parsed = ArrivalInput.model_validate({
             **row,
             "row_count": int(row["row_count"]) if row.get("row_count") is not None else None,
-            "arrived_at": datetime.fromisoformat(row["arrived_at"]) if row.get("arrived_at") else None,
-            "completed_at": datetime.fromisoformat(row["completed_at"]) if row.get("completed_at") else None,
-            "expected_at": datetime.fromisoformat(row["expected_at"]) if row.get("expected_at") else None,
+            "arrived_at": parse_timestamp(row.get("arrived_at")),
+            "completed_at": parse_timestamp(row.get("completed_at")),
+            "expected_at": parse_timestamp(row.get("expected_at")),
         })
     except (ValueError, TypeError, ValidationError) as exc:
         return None, ("invalid_record", str(exc))

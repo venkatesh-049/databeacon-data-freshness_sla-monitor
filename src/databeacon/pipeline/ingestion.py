@@ -20,11 +20,12 @@ def run_pipeline(db_path: Path, source_file: Path, now=None, progress=None) -> d
     fingerprint = hashlib.sha256(payload).hexdigest()
     if repository.existing_fingerprint(connection, fingerprint):
         logger.info("run_skipped fingerprint=%s source_file=%s", fingerprint, source_file)
+        connection.close()
         return {"status": "skipped", "reason": "input_already_processed", "fingerprint": fingerprint}
     run_id = str(uuid.uuid4())
     started = now or utc_now()
     repository.create_run(connection, run_id, fingerprint, str(source_file), started.isoformat())
-    accepted = rejected = duplicate_count = input_count = 0
+    accepted = rejected = duplicate_count = updated_count = input_count = 0
     seen: set[str] = set()
     try:
         progress(f"Reading and validating {source_file.name}")
@@ -55,10 +56,26 @@ def run_pipeline(db_path: Path, source_file: Path, now=None, progress=None) -> d
                 "completed_at": parsed.completed_at.isoformat() if parsed.completed_at else None,
                 "row_count": parsed.row_count, "freshness_minutes": freshness,
                 "completion_minutes": completion, "sla_status": status, "raw_payload": raw_json(row),
+                "observed_at": started.isoformat(), "sla_minutes": config["sla_minutes"],
             }
-            if repository.insert_event(connection, event):
+            outcome = repository.insert_event(connection, event)
+            if outcome["action"] == "conflict":
+                rejected += 1
+                repository.insert_reject(connection, {
+                    "run_id": run_id, "source_file": str(source_file), "source_row": source_row,
+                    "reason_code": "conflicting_event_update",
+                    "reason_detail": "event update would make completion precede arrival",
+                    "raw_payload": raw_json(row),
+                })
+                continue
+            if outcome["action"] in {"inserted", "updated"}:
                 accepted += 1
-                alert = alert_for(status, config["dataset_name"], key, completion, config["sla_minutes"])
+                if outcome["action"] == "updated":
+                    updated_count += 1
+                alert = alert_for(
+                    outcome["sla_status"], config["dataset_name"], key,
+                    outcome["completion_minutes"], config["sla_minutes"],
+                )
                 if alert:
                     severity, alert_type, message, action = alert
                     repository.insert_alert(connection, {
@@ -68,24 +85,30 @@ def run_pipeline(db_path: Path, source_file: Path, now=None, progress=None) -> d
                     })
             else:
                 duplicate_count += 1
+                repository.insert_duplicate(connection, {
+                    "run_id": run_id, "dataset_id": parsed.dataset_id, "event_key": key,
+                    "source_file": str(source_file), "source_row": source_row,
+                    "reason": "event key already published",
+                })
             if input_count % 1000 == 0:
                 progress(f"Processed {input_count:,} rows ({accepted:,} accepted, {rejected:,} rejected)")
         progress("Publishing run metrics, freshness results, and alerts")
         status = "succeeded" if rejected == 0 else "partial"
         repository.finish_run(connection, run_id, utc_now().isoformat(), status,
-                              input_count, accepted, rejected, duplicate_count=duplicate_count)
+                              input_count, accepted, rejected, duplicate_count=duplicate_count,
+                              updated_count=updated_count)
         connection.commit()
         logger.info(
             "run_finished run_id=%s status=%s input_count=%s accepted_count=%s "
-            "rejected_count=%s duplicate_count=%s",
-            run_id, status, input_count, accepted, rejected, duplicate_count,
+            "rejected_count=%s duplicate_count=%s updated_count=%s",
+            run_id, status, input_count, accepted, rejected, duplicate_count, updated_count,
         )
         return {"run_id": run_id, "status": status, "input_count": input_count,
             "accepted_count": accepted, "rejected_count": rejected,
-            "duplicate_count": duplicate_count}
+            "duplicate_count": duplicate_count, "updated_count": updated_count}
     except Exception as exc:
         repository.finish_run(connection, run_id, utc_now().isoformat(), "failed",
-                              input_count, accepted, rejected, str(exc), duplicate_count)
+                              input_count, accepted, rejected, str(exc), duplicate_count, updated_count)
         logger.exception("run_failed run_id=%s input_count=%s error=%s", run_id, input_count, exc)
         raise
     finally:

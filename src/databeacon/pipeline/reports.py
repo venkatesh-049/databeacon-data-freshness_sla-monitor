@@ -18,7 +18,7 @@ def reconciliation(db_path: Path) -> dict:
     connection = connect(db_path)
     run_rows = connection.execute(
         """SELECT run_id, input_count, accepted_count, rejected_count,
-                  duplicate_count, status FROM runs ORDER BY started_at"""
+                  duplicate_count, updated_count, status FROM runs ORDER BY started_at"""
     ).fetchall()
     event_keys = connection.execute(
         "SELECT COUNT(*) AS total, COUNT(DISTINCT event_key) AS unique_keys FROM arrival_events"
@@ -29,6 +29,7 @@ def reconciliation(db_path: Path) -> dict:
         "accepted_count": sum(row["accepted_count"] for row in run_rows),
         "rejected_count": sum(row["rejected_count"] for row in run_rows),
         "duplicate_count": sum(row["duplicate_count"] for row in run_rows),
+        "updated_count": sum(row["updated_count"] for row in run_rows),
         "published_event_count": event_keys["total"],
         "unique_event_key_count": event_keys["unique_keys"],
     }
