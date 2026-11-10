@@ -197,7 +197,7 @@ operator-facing behavior.
 | `data/sample/dashboard_demo_events.csv` | One-run demo input for late, fresh, and omitted dataset states | Lets reviewers see all key dashboard states without UI changes |
 | `data/sample/dashboard_demo_events.expected.json` | Expected combined dashboard statuses and alerts | Makes the visual demo deterministic |
 | `data/output/validation_report.json` | Sample status, alert, reject, and run evidence | Reviewable output artifact |
-| `data/test_evidence.json` | Consolidated test inputs, expected results, observed outputs, reconciliation, and coverage | Single evidence file for hackathon review |
+| `data/test_evidence.json` | Consolidated test inputs, expected results, observed outputs, reconciliation, and coverage | Single evidence file for project review |
 | `data/manifest.json` | Generator, seed, file list, schema, and synthetic-data rights | Reproducibility and data provenance |
 | `data/databeacon.db` | Local SQLite target after a sample run | Inspectable local target state |
 

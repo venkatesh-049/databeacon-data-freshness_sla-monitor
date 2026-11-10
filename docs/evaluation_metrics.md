@@ -1,4 +1,4 @@
-# Hackathon evaluation metrics and evidence
+# Project evaluation metrics and evidence
 
 ## Metric definitions
 

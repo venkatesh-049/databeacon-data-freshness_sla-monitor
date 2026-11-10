@@ -228,7 +228,7 @@ python -m databeacon generate --rows 12 --seed 123
 python -m databeacon run
 ```
 
-Hackathon review artifacts are available in
+Project review artifacts are available in
 [evaluation_metrics.md](docs/evaluation_metrics.md),
 [manifest.json](data/manifest.json), and
 [PROMPT_HISTORY.md](ai_transparency/PROMPT_HISTORY.md).
