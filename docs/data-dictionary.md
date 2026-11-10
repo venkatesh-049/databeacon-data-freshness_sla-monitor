@@ -43,7 +43,25 @@ One row per configured source dataset.
 | `sla_minutes` | integer | > 0 | Maximum completion duration |
 | `active` | integer | 0/1 | Configuration activation flag |
 
-Seeded datasets are `sales_daily`, `inventory_daily`, and `customers_daily`.
+The seed catalog contains 12 datasets: `sales_daily`, `inventory_daily`,
+`customers_daily`, `orders_daily`, `payments_daily`, `products_daily`,
+`shipments_daily`, `returns_daily`, `promotions_daily`, `suppliers_daily`,
+`finance_daily`, and `support_daily`.
+
+| Dataset ID | Expected UTC time | SLA minutes |
+|---|---:|---:|
+| `sales_daily` | 06:00 | 120 |
+| `inventory_daily` | 07:00 | 180 |
+| `customers_daily` | 08:00 | 90 |
+| `orders_daily` | 06:00 | 120 |
+| `payments_daily` | 07:00 | 120 |
+| `products_daily` | 08:00 | 180 |
+| `shipments_daily` | 09:00 | 180 |
+| `returns_daily` | 10:00 | 240 |
+| `promotions_daily` | 10:00 | 240 |
+| `suppliers_daily` | 11:00 | 240 |
+| `finance_daily` | 12:00 | 180 |
+| `support_daily` | 13:00 | 180 |
 
 ### `runs`
 
@@ -59,6 +77,7 @@ One row per attempted source-file execution.
 | `input_count` | integer | Rows read |
 | `accepted_count` | integer | Rows published to target |
 | `rejected_count` | integer | Rows quarantined |
+| `duplicate_count` | integer | Valid rows whose event key was already published |
 | `error_message` | text nullable | Fatal failure detail |
 
 ### `arrival_events`
@@ -89,6 +108,11 @@ One row per invalid source record. `source_row`, `source_file`, `run_id`, and
 One row per detected issue. Alerts include `severity`, `alert_type`, human
 message, recommended action, dataset, event, run, creation time, and
 acknowledgement state.
+
+Event-based late and incomplete alerts are persisted in this table. Missing
+load alerts for datasets with no event in a run are derived in the dashboard
+response from the dataset catalog; they do not have a persisted alert row or
+acknowledgement ID in the current implementation.
 
 ## Relationships and integrity
 
