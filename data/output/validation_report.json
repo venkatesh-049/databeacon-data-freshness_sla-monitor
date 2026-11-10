@@ -1,0 +1,22 @@
+{
+  "latest_run": {
+    "run_id": "b3c17d4a-d755-4a33-9c4a-29da28b823cd",
+    "input_fingerprint": "6705d375a95aefa0e2c0c041b9eee22874ee16d97b3372530286c489e4f309ab",
+    "source_file": "data\\sample\\events.csv",
+    "started_at": "2026-11-10T06:42:02.973742+00:00",
+    "ended_at": "2026-11-10T06:42:02.982654+00:00",
+    "status": "succeeded",
+    "input_count": 23,
+    "accepted_count": 1,
+    "rejected_count": 0,
+    "error_message": null,
+    "duplicate_count": 22
+  },
+  "status_counts": {
+    "fresh": 19,
+    "late": 4
+  },
+  "published_events": 23,
+  "rejects": 0,
+  "alerts": 4
+}
