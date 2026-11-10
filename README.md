@@ -4,6 +4,9 @@ DataBeacon is a local, reproducible data-engineering vertical slice for
 tracking expected dataset arrivals, completion SLAs, freshness, missing/late
 loads, rejects, and actionable alerts.
 
+The dashboard, data contract, and run scenarios are explained in the sections
+below and in the linked architecture, data dictionary, and evaluation documents.
+
 ## Architecture
 
 `CSV producer -> ingestion/validation -> SQLite target + quarantine -> SLA rules
@@ -28,10 +31,10 @@ py -m venv .venv
 ```
 
 For a larger synthetic run, use `python scripts/benchmark.py --rows 100000`.
-On the reference local machine, 100,000 deterministic rows completed in about
-6.2 seconds (~16,000 rows/second). The pipeline uses a single SQLite session,
-prepared parameterized writes, conflict-safe event keys, and monitoring indexes
-as its primary optimization.
+A measured local run processed 100,000 rows in about 6.76 seconds (~14,796
+rows/second); results depend on the machine. The pipeline uses a single SQLite
+session, parameterized writes, conflict-safe event keys, and monitoring
+indexes.
 
 Open `http://127.0.0.1:8000/`. API endpoints include `/api/health`, `/api/dashboard`, `/api/report`,
 `/api/rejects`, `/api/alerts`, `POST /api/alerts/{id}/acknowledge`, and
@@ -100,11 +103,13 @@ the database.
 `data/output/validation_report.json` contains run counts, status distribution,
 published events, rejects, and alerts. The test suite verifies happy path,
 empty/invalid values, malformed schema, duplicate keys, invalid references,
-out-of-order records, and idempotent reruns. The generator uses seed `42`;
-change `--file` and the generator function's `rows` value for larger runs.
+out-of-order records, and idempotent reruns. The generator function supports a
+fixed seed; the CLI uses a random seed unless `--seed` is supplied and appends
+randomized batches by default. Use `--rows` and `--file` to control a generated
+batch and its destination.
 
 `python -m databeacon reconcile` emits executable reconciliation evidence:
-`input_count = accepted_count + rejected_count` and
+`input_count = accepted_count + rejected_count + duplicate_count` and
 `published_event_count = unique_event_key_count`. The deliberately invalid
 fixture is [invalid_events.csv](data/sample/invalid_events.csv), with expected
 labels kept separately in
@@ -230,8 +235,9 @@ python -m databeacon run
 
 Project review artifacts are available in
 [evaluation_metrics.md](docs/evaluation_metrics.md),
-[manifest.json](data/manifest.json), and
-[PROMPT_HISTORY.md](ai_transparency/PROMPT_HISTORY.md).
+[manifest.json](data/manifest.json),
+[architecture.md](docs/architecture.md), and
+[data-dictionary.md](docs/data-dictionary.md).
 The complete requirement-by-requirement audit is in
 [requirements-matrix.md](docs/requirements-matrix.md).
 The folder/file ownership and business alignment guide is in
