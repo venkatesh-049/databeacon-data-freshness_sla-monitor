@@ -15,7 +15,7 @@
 | R11 | Performance and optimization | `scripts/benchmark.py`, indexed SQLite | 100k benchmark |
 | R12 | Web/API delivery | FastAPI routes and dashboard | HTTP/API tests |
 | R13 | Auto-updated dashboard | polling every 5 seconds | `test_dashboard_auto_refreshes...` |
-| R14 | AI transparency and synthetic-data rights | `ai_transparency/`, manifest | Review artifacts |
+| R14 | Explain runtime decision-making and synthetic-data rights | `architecture.md`, `data/manifest.json` | Deterministic SLA rules; synthetic-only data provenance |
 | R15 | Demonstrable attention scenario | `data/sample/attention_events.csv` | Late, incomplete, and missing alert demo |
 
 ## Required negative scenarios
