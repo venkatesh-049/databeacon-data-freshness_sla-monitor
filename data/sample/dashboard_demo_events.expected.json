@@ -1,0 +1,33 @@
+{
+  "latest_run_statuses": {
+    "sales_daily": "late",
+    "inventory_daily": "fresh",
+    "customers_daily": "missing",
+    "orders_daily": "missing",
+    "payments_daily": "missing",
+    "products_daily": "missing",
+    "shipments_daily": "missing",
+    "returns_daily": "missing",
+    "promotions_daily": "missing",
+    "suppliers_daily": "missing",
+    "finance_daily": "missing",
+    "support_daily": "missing"
+  },
+  "alerts": [
+    {
+      "dataset_id": "sales_daily",
+      "severity": "warning",
+      "alert_type": "sla_breach"
+    },
+    {
+      "dataset_id": "customers_daily",
+      "severity": "critical",
+      "alert_type": "missing_load"
+    }
+  ],
+  "notes": [
+    "customers_daily is intentionally absent from the input file.",
+    "The dashboard still displays it because it is a configured dataset.",
+    "inventory_daily completes within its 180-minute SLA."
+  ]
+}
