@@ -1,0 +1,129 @@
+{
+  "generated_by": "scripts/build_test_evidence.py",
+  "purpose": "Reproducible test data, pipeline outputs, expected results, and reconciliation evidence",
+  "test_command": "python -m pytest",
+  "cases": [
+    {
+      "name": "happy_path",
+      "input_file": "data\\evidence\\happy_path_events.csv",
+      "database": "data/evidence/happy_path.db",
+      "expected": {
+        "status": "succeeded",
+        "input_count": 12,
+        "accepted_count": 12,
+        "rejected_count": 0
+      },
+      "observed_run": {
+        "run_id": "b378a591-33e5-4111-8f61-075ae1feb340",
+        "status": "succeeded",
+        "input_count": 12,
+        "accepted_count": 12,
+        "rejected_count": 0,
+        "duplicate_count": 0
+      },
+      "reconciliation": {
+        "runs": [
+          {
+            "run_id": "b378a591-33e5-4111-8f61-075ae1feb340",
+            "input_count": 12,
+            "accepted_count": 12,
+            "rejected_count": 0,
+            "duplicate_count": 0,
+            "status": "succeeded"
+          }
+        ],
+        "input_count": 12,
+        "accepted_count": 12,
+        "rejected_count": 0,
+        "duplicate_count": 0,
+        "published_event_count": 12,
+        "unique_event_key_count": 12,
+        "counts_reconcile": true,
+        "unique_keys_reconcile": true
+      },
+      "passed": true
+    },
+    {
+      "name": "invalid_and_quarantine",
+      "input_file": "data\\sample\\invalid_events.csv",
+      "database": "data/evidence/invalid_events.db",
+      "expected": {
+        "status": "partial",
+        "input_count": 5,
+        "accepted_count": 1,
+        "rejected_count": 4
+      },
+      "observed_run": {
+        "run_id": "1c2e8c59-fbe6-4864-afb9-da98ada7a24e",
+        "status": "partial",
+        "input_count": 5,
+        "accepted_count": 1,
+        "rejected_count": 4,
+        "duplicate_count": 0
+      },
+      "reconciliation": {
+        "runs": [
+          {
+            "run_id": "1c2e8c59-fbe6-4864-afb9-da98ada7a24e",
+            "input_count": 5,
+            "accepted_count": 1,
+            "rejected_count": 4,
+            "duplicate_count": 0,
+            "status": "partial"
+          }
+        ],
+        "input_count": 5,
+        "accepted_count": 1,
+        "rejected_count": 4,
+        "duplicate_count": 0,
+        "published_event_count": 1,
+        "unique_event_key_count": 1,
+        "counts_reconcile": true,
+        "unique_keys_reconcile": true
+      },
+      "passed": true
+    },
+    {
+      "name": "attention_states",
+      "input_file": "data\\sample\\attention_events.csv",
+      "database": "data/evidence/attention_events.db",
+      "expected": {
+        "status": "succeeded",
+        "input_count": 2,
+        "accepted_count": 2,
+        "rejected_count": 0
+      },
+      "observed_run": {
+        "run_id": "2c7fedab-fe66-4291-816f-11bf3fa2f7ec",
+        "status": "succeeded",
+        "input_count": 2,
+        "accepted_count": 2,
+        "rejected_count": 0,
+        "duplicate_count": 0
+      },
+      "reconciliation": {
+        "runs": [
+          {
+            "run_id": "2c7fedab-fe66-4291-816f-11bf3fa2f7ec",
+            "input_count": 2,
+            "accepted_count": 2,
+            "rejected_count": 0,
+            "duplicate_count": 0,
+            "status": "succeeded"
+          }
+        ],
+        "input_count": 2,
+        "accepted_count": 2,
+        "rejected_count": 0,
+        "duplicate_count": 0,
+        "published_event_count": 2,
+        "unique_event_key_count": 2,
+        "counts_reconcile": true,
+        "unique_keys_reconcile": true
+      },
+      "passed": true
+    }
+  ],
+  "automated_test_count": 17,
+  "all_cases_passed": true
+}
