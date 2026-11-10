@@ -56,6 +56,12 @@ The attention fixture intentionally produces:
 The dashboard action center shows the alert severity, explanation, recommended
 operator action, and acknowledgement control.
 
+The current dashboard presentation is part of the review evidence: Pipeline run
+history is full-width above Data quality pulse; detail tables use compact
+CSV-style rows, visible column separators, and display-only `S.No` values.
+Empty accepted/rejected/duplicate sections collapse to their no-records row.
+When a detail view is open, browser polling pauses to keep the evidence stable.
+
 ## Critical alert demonstration
 
 `data/sample/critical_missing_events.csv` supplies healthy sales and inventory

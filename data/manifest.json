@@ -14,5 +14,6 @@
     "data/sample/dashboard_demo_events.expected.json"
   ],
   "schema": "dataset_id,expected_at,arrived_at,completed_at,row_count",
+  "generation_behavior": "API generation includes one missing-arrival record per four rows by default; include_missing=false disables it.",
   "data_rights": "Synthetic data generated for this project; no third-party data used."
 }

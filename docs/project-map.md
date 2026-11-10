@@ -110,7 +110,9 @@ Important endpoints:
 
 The dashboard polls the dashboard and report endpoints every five seconds. This
 keeps it aligned with newly completed, partial, failed, or acknowledged runs
-without requiring a manual browser refresh.
+without requiring a manual browser refresh. Polling pauses while an inline
+pipeline-history dataset detail is open, preventing table flicker and repeated
+detail requests; explicit refresh and operator actions still reload the view.
 
 ## 5. Storage: `src/databeacon/db/`
 

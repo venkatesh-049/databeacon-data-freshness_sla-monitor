@@ -9,8 +9,8 @@ below and in the linked architecture, data dictionary, and evaluation documents.
 
 ## Architecture
 
-`CSV producer -> ingestion/validation -> SQLite target + quarantine -> SLA rules
--> alerts/reports -> FastAPI dashboard/API`
+`CSV file or producer upload -> ingestion/validation -> SQLite target + quarantine
+-> SLA rules + independent expected-window monitor -> alerts/reports -> FastAPI dashboard/API`
 
 The source grain is one arrival event per `(dataset_id, expected_at)`. Stable
 event keys are SHA-256 hashes of that pair. `run_id` and `source_file` are
@@ -31,16 +31,25 @@ py -m venv .venv
 ```
 
 For a larger synthetic run, use `python scripts/benchmark.py --rows 100000`.
-A measured local run processed 100,000 rows in about 6.76 seconds (~14,796
+A measured local run processed 100,000 rows in about 13.87 seconds (~7,210
 rows/second); results depend on the machine. The pipeline uses a single SQLite
-session, parameterized writes, conflict-safe event keys, and monitoring
-indexes.
+session, parameterized writes, conflict-safe event keys, append-only lifecycle
+observations, and monitoring indexes.
 
-Open `http://127.0.0.1:8000/`. API endpoints include `/api/health`, `/api/dashboard`, `/api/report`,
-`/api/rejects`, `/api/alerts`, `POST /api/alerts/{id}/acknowledge`, and
-`POST /api/runs?source_file=...`. The dashboard supports responsive layouts,
-status pills, alert actions, reconciliation summary, and refresh without a
-frontend build step. It automatically refreshes every five seconds.
+Open `http://127.0.0.1:8000/`. API endpoints include `/api/health`,
+`/api/dashboard`, `/api/report`, `/api/rejects`, `/api/alerts`,
+`POST /api/alerts/{id}/acknowledge`, `POST /api/runs?source_file=...`,
+`POST /api/runs/generate`, and `POST /api/runs/upload`. Downloadable CSV
+outputs are available from `/api/download/events`, `/api/download/observations`,
+`/api/download/rejects`, `/api/download/alerts`, and
+`/api/download/windows`. The dashboard provides Generate & run, Upload CSV,
+Refresh data, and Download data controls, and shows the current expected-window
+status while auto-refreshing every five seconds. The dashboard uses compact
+CSV-style tables with visible column separators and `S.No` columns in inline
+accepted, rejected, and duplicate detail tables. Empty detail sections collapse
+to their single no-records row instead of reserving a blank viewport.
+The API also runs an independent deadline monitor (30-second default interval)
+so missing/incomplete alerts are persisted even when no new CSV run occurs.
 
 ## Dashboard guide
 
@@ -55,21 +64,26 @@ screenshots only; they do not imply any dashboard style changes.
   This is the configured catalog count, not the number of input rows in one run.
 * **Latest run rows** — records read from the most recent pipeline input,
   including accepted, rejected, and duplicate records.
-* **Platform health** — current fresh datasets divided by monitored datasets;
+* **Platform health** — currently fresh expected windows divided by monitored datasets;
   the supporting text shows datasets needing attention.
-* **Open alerts** — unacknowledged alerts for the latest run. Older alerts
-  remain available in the alert API and persisted in SQLite.
-* **Dataset health** — latest run's per-dataset status, expected arrival and
-  completion timestamps. Statuses distinguish fresh, late, incomplete, missing,
-  and scheduled datasets.
-* **Action center** — actionable warnings and critical alerts associated with
-  the latest run. Acknowledge an alert to remove it from the open-alert view;
-  its stored record remains in the database.
-* **Pipeline run history** — expandable run records ordered newest first.
+* **Open alerts** — unresolved, unacknowledged scheduled-window alerts plus
+  alerts from the latest pipeline run. Acknowledged/resolved history remains
+  available in SQLite and the alert API.
+* **Dataset health** — status for the current UTC expected window, including
+  its expected and completion timestamps. Run history retains the status at
+  ingestion time.
+* **Action center** — actionable warnings and critical alerts from the latest
+  run and the independent window monitor. Acknowledge an open alert; its
+  stored record remains in history.
+* **Pipeline run history** — expandable run records ordered newest first,
+  displayed full-width above the Data quality pulse. The history table has
+  compact rows, visible column separators, and expandable dataset details.
   Expand any run to view that run's dataset health, including datasets that did
-  not arrive in that run. Open run panels remain open as the dashboard refreshes.
+  not arrive in that run. Open run panels remain open during an explicit
+  dashboard refresh.
 * **Data quality pulse** — latest-run details and aggregate event, status,
-  reject, and alert counts for operational reconciliation.
+  reject, and alert counts for operational reconciliation, kept below the
+  full-width pipeline history.
 * **Refresh data** — reloads the database-backed dashboard immediately; normal
   automatic refresh runs every five seconds.
 
@@ -91,12 +105,81 @@ the database.
   Fatal schema changes fail the run explicitly.
 * A SHA-256 input fingerprint makes successful/partial reruns safe; rerunning
   the same file returns `skipped` and does not publish duplicates.
+* If a later producer file adds arrival/completion details for the same
+  expected window, DataBeacon enriches the canonical event and records an
+  append-only observation so each run's history remains accurate.
 * A failed run remains in `runs` with its failure reason. Retry with a corrected
   or newly fingerprinted source file. Backfills use a new expected timestamp or
   explicitly prepared source file.
-* `fresh` means completion is within the configured SLA, `late` exceeds it,
-  `missing` has passed its expected time without arrival, and `incomplete`
-  lacks completion.
+* Each active dataset receives a daily expected window at its configured UTC
+  time. A load becomes `missing` after the configurable arrival grace period
+  (15 minutes by default). An observed arrival becomes `incomplete` if it has
+  not completed by its completion SLA; completed loads are `fresh` or `late`.
+* The monitor runs in the API background worker and can also be run manually:
+  `python -m databeacon monitor` or `POST /api/monitor/run`. It evaluates
+  yesterday and today on restart, persists one alert per window/type, resolves
+  missing/incomplete alerts when the load arrives/completes, and preserves
+  acknowledged/resolved alert history.
+* Browser polling refreshes the UI; the independent server-side monitor
+  performs deadline evaluation. Configure `DATABEACON_MONITOR_INTERVAL_SECONDS`
+  and `DATABEACON_ARRIVAL_GRACE_MINUTES` to change the monitor cadence/grace.
+  When a pipeline-history dataset detail is open, browser polling is paused so
+  the table does not flicker or refetch repeatedly. Use the explicit
+  **Refresh data** button to refresh the dashboard while keeping the detail
+  view selected.
+
+### Provide producer data instead of generating it
+
+The upload endpoint accepts the same normalized CSV contract shown in
+[data-dictionary.md](docs/data-dictionary.md), validates it, stores the file
+under `data/incoming/`, and runs the normal idempotent pipeline:
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/runs/upload `
+  -Method Post -ContentType "text/csv" `
+  -InFile "data\incoming\producer_events.csv"
+```
+
+The upload is limited to 25 MiB. The endpoint accepts CSV bytes, not a local
+path supplied by a remote producer, and creates a safe server-side filename.
+For producers with another schema, map fields to the documented contract in
+their adapter before submitting. The current payload is arrival telemetry
+(dataset ID, expected/arrival/completion timestamps, and row count); it does
+not load the producer's underlying business rows into a warehouse.
+
+The dashboard's **Generate & run** control uses the same pipeline as an uploaded
+file. Its row-count field supports 0 through 1,000,000 rows, and the API also
+accepts `seed` and `randomize_status` query parameters for reproducible or
+deliberately mixed-health batches. After either input path completes, the
+download controls expose the persisted canonical events, lifecycle
+observations, quarantined rejects, alerts, and expected monitoring windows.
+Generated batches deliberately include one deterministic missing-arrival record
+for every four generated rows by default. This keeps the missing-load path
+visible during demonstrations; pass `include_missing=false` to generate a
+fully populated batch.
+
+### Finding and downloading only the records you need
+
+The Dataset health panel includes filters for status, dataset, free-text
+dataset ID/name search, and expected-date range. Use **Clear** to reset them.
+The result count shows how many current windows match the selection. **Download
+filtered CSV** exports `events.csv` for fresh, late, or incomplete event
+statuses; when status is `missing`, it exports `expected_windows.csv`, because
+a missing load has no arrival event yet. The same filters are available through
+the API, for example:
+
+```powershell
+# Late arrivals only
+Invoke-WebRequest "http://127.0.0.1:8000/api/download/events?status=late" -OutFile late_events.csv
+
+# Missing expected windows for one dataset and date range
+Invoke-WebRequest "http://127.0.0.1:8000/api/download/windows?status=missing&dataset_id=sales_daily&from_date=2026-01-01&to_date=2026-01-31" -OutFile missing_windows.csv
+```
+
+Useful fields in these exports include the stable event/window key, dataset,
+expected time, arrival/completion times, SLA status, freshness or completion
+minutes, source file, and run ID. This makes the file actionable for a
+pipeline operator while preserving traceability back to the original load.
 
 ## Data quality and evidence
 
@@ -133,18 +216,22 @@ failure details on stdout.
 
 ### When do open alerts increase?
 
-Open alerts increase when a new run detects an issue:
+Open alerts can be created by an ingestion run or by the independent schedule
+monitor:
 
 | Condition | Severity | Alert type |
 |---|---|---|
 | Completion exceeds the configured SLA | warning | `sla_breach` |
 | Arrival exists but completion is absent | warning | `incomplete_load` |
 | Expected window passes without arrival | critical | `missing_load` |
+| Arrival grace period passes with no observed arrival | critical | `missing_load` |
+| Arrival is observed but completion misses its SLA | warning | `incomplete_load` |
 
-Alerts are stored with their run, dataset, event, message, action, and
-timestamp. The dashboard shows alerts from the latest run. Identical reruns
-are skipped and do not create duplicates; acknowledgement removes an alert
-from the open view while preserving its database history.
+Schedule alerts are persisted with a deterministic expected-window key and do
+not require a run ID. They are idempotent across monitor retries and can be
+acknowledged; they resolve when the corresponding arrival/completion is
+observed. Event alerts remain tied to their ingestion run. Identical file
+reruns are skipped.
 
 To demonstrate one critical alert:
 
@@ -156,8 +243,10 @@ $env:DATABEACON_DB = "data\critical_demo.db"
 python -m uvicorn databeacon.api.app:app --reload
 ```
 
-The dashboard will show `customers_daily` as **missing**, with a critical
-`missing_load` alert and a backfill action. Expected results are in
+The expanded run history will show `customers_daily` as absent from that
+historical input. The live missing-load alert is instead based on the current
+configured UTC schedule and arrival grace, not the date of the fixture.
+Expected per-run results are in
 [critical_missing_events.expected.json](data/sample/critical_missing_events.expected.json).
 
 ### Single dashboard demo: fresh + late + critical
@@ -172,17 +261,18 @@ $env:DATABEACON_DB = "data\dashboard_demo.db"
 python -m uvicorn databeacon.api.app:app --reload
 ```
 
-The existing dashboard will show:
+The expanded run history will show:
 
-| Dataset | Dashboard state | Why |
+| Dataset | Run state | Why |
 |---|---|---|
 | `sales_daily` | late / warning | Completion is 210 minutes after expected; SLA is 120 minutes |
 | `inventory_daily` | fresh | Completion is 60 minutes after expected; SLA is 180 minutes |
-| `customers_daily` | missing / critical | It is configured but intentionally absent from the latest input |
+| `customers_daily` | missing | It is configured but intentionally absent from this run's input |
 
 The dashboard monitors 12 configured datasets. This compact demo intentionally
-loads only two representative datasets so the other configured datasets expose
-missing-load behavior; the normal generator creates one event for all 12.
+loads only two representative datasets so the run history shows two populated
+datasets and the remaining datasets as absent from that run. The independent
+monitor tracks current-day windows separately.
 
 This demonstration changes only the input dataset and database selection; no
 dashboard code or UI changes are required.
@@ -214,7 +304,9 @@ DataBeacon and comes from an unrelated command or file.
 
 The dashboard automatically polls `/api/dashboard` and `/api/report` every five
 seconds, so completed/failed runs, new alerts, acknowledgements, and
-reconciliation changes appear without a manual page refresh.
+reconciliation changes appear without a manual page refresh. Polling pauses
+while an inline pipeline-history detail is open to prevent flicker and repeated
+requests; the explicit Refresh data button still forces a refresh.
 
 ### Random append-only generation
 
@@ -249,6 +341,41 @@ Regenerate it with:
 ```powershell
 python scripts/build_test_evidence.py
 ```
+
+### Per-run dataset audit
+
+Each run now shows exactly one history row per configured dataset. Multiple
+dated arrival records for `customers_daily` are summarized under that single
+header with a record count; they are not rendered as repeated dataset rows.
+Expand a run and click a dataset name, such as `customers_daily`, to open its
+audit panel. The panel separates accepted
+observations, rejected source rows, and duplicate event IDs for that specific
+run and dataset. It includes source row numbers, stable event or reject IDs,
+timestamps, SLA status, raw payloads, freshness/completion minutes, and reject
+reasons, with a search box for finding a row or reason. Each section can be
+downloaded independently from inside the panel. A dataset can appear once per
+run in history by design; clicking it shows the evidence behind that historical
+snapshot.
+
+Dataset health and run history intentionally use different time contexts:
+**Dataset health** is the live current UTC expected window, while **Pipeline
+run history** is the historical window(s) contained in a selected ingestion
+run. A January generated record can therefore be `fresh` in its historical
+run while today's window is `missing`; those statuses refer to different
+expected timestamps, not conflicting classifications.
+
+The displayed “whole data” is the complete DataBeacon arrival/SLA telemetry
+available for that dataset: it does not contain individual customer or finance
+business columns because the input contract contains metadata and `row_count`,
+not the underlying business payload. To display actual customer attributes,
+the producer contract would need to be extended with a business-payload table
+or a connector to the source system.
+
+Rows rejected by validation (including duplicate keys within the same input
+file) appear under **Rejected records** with the reason and raw payload.
+Records that repeat an event already published by an earlier run appear under
+**Duplicate records** with their event key and source row. They are counted
+but never published twice.
 
 ## Limitations and next steps
 
