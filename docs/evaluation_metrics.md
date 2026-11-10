@@ -4,7 +4,7 @@
 
 | Metric | Formula | Why it matters | Evidence |
 |---|---|---|---|
-| Completeness | `input = accepted + rejected` | No silent loss | `databeacon reconcile` |
+| Completeness | `input = accepted + rejected + duplicates` | No silent loss | `databeacon reconcile` |
 | Publish uniqueness | `published = distinct event_key` | Safe reruns | `databeacon reconcile` |
 | Freshness | `now - arrived_at` | Consumer recency | `arrival_events.freshness_minutes` |
 | SLA compliance | `fresh / published * 100` | Service reliability | `/api/report` |
@@ -14,16 +14,22 @@
 | Recovery | Failed run retained, retry succeeds | Operability | retry test |
 | Throughput | `rows / elapsed_seconds` | Scalability | `scripts/benchmark.py` |
 
-## Current sample evidence
+## Checked-in report snapshot
 
-The checked-in sample contains 12 valid rows. The generated report records:
+The checked-in `data/output/validation_report.json` is a snapshot from the
+latest local demonstration run. It records:
 
-* 12 input rows;
-* 12 accepted rows;
+* 23 input rows in the growing append-only source file;
+* 1 newly published event;
 * 0 rejected rows;
-* 10 fresh events;
-* 2 late events;
-* 2 alerts.
+* 22 rows whose event keys were already published;
+* 23 cumulative published events;
+* 19 fresh and 4 late cumulative events;
+* 4 persisted alerts.
+
+These are snapshot values, not constants or expected results for every
+execution. Running generation and ingestion again changes run counts and may
+change the status distribution.
 
 The labelled negative fixture contains 5 rows, with 1 accepted and 4 rejected.
 Expected reason labels are isolated from the input file.
