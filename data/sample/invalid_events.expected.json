@@ -1,0 +1,6 @@
+{
+  "input_count": 5,
+  "accepted_count": 1,
+  "rejected_count": 4,
+  "reason_codes": ["duplicate_key", "invalid_record", "invalid_sequence", "out_of_order"]
+}
